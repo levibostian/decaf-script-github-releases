@@ -1,9 +1,9 @@
-import {
+import type {
   GetLatestReleaseStepInput,
   GetLatestReleaseStepOutput,
   GitCommit,
-} from "jsr:@levibostian/decaf-sdk@0.2.1";
-import { assertEquals } from "jsr:@std/assert@1.0.14"
+} from "@levibostian/decaf-sdk";
+import { assertEquals } from "@std/assert"
 
 // a decaf script test runner essentially. Copied from decaf: https://github.com/levibostian/decaf/blob/a0e324f7209c0f37b9d275b7259fcefd591a17c6/steps/get-next-release.test.ts#L4
 // would be nice to put into decaf or the sdks in the future. 

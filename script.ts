@@ -1,9 +1,9 @@
 import {
   getLatestReleaseStepInput,
-  GetLatestReleaseStepOutput,
+  type GetLatestReleaseStepOutput,
   setLatestReleaseStepOutput
-} from "jsr:@levibostian/decaf-sdk@0.2.1";
-import $ from "jsr:@david/dax@0.43.2";
+} from "@levibostian/decaf-sdk";
+import $ from "@david/dax";
 
 export const getLatestReleaseFromGitHubReleases = async (): Promise<GetLatestReleaseStepOutput | null> => {
   const input = getLatestReleaseStepInput();
