@@ -18,11 +18,8 @@ export const getLatestReleaseFromGitHubReleases = async (): Promise<GetLatestRel
 
   console.log(`Latest git tag on the current branch is: ${latestGitTag}`);
 
-  const latestReleasesGitHub: {
-    name: string;
-    tagName: string;
-  }[] = await $`gh release list --exclude-drafts --order desc --json name,tagName`
-      .json()
+  const latestReleasesGitHubJsonString = Deno.env.get("MOCK_GITHUB_RELEASES") || await $`gh release list --exclude-drafts --order desc --json name,tagName`.text()
+  const latestReleasesGitHub = JSON.parse(latestReleasesGitHubJsonString) as { name: string; tagName: string }[];
 
   if (!latestReleasesGitHub.length) {
     console.log(`No GitHub Releases found in the GitHub repository. Perhaps this is a mistake, since there is a git tag on the current branch but no GitHub Release for that tag? I suggest making a GitHub Release for the git tag, ${latestGitTag}, and then re-running the deployment.`);
