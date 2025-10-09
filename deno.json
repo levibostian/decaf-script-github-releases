@@ -1,6 +1,5 @@
 {
   "name": "@levibostian/decaf-script-github-releases",
-  "version": "0.1.0",
   "license": "MIT",
   "exports": {
     ".": "./script.ts"
@@ -22,6 +21,7 @@
   },
   "tasks": {
     "test": "deno test --allow-all --junit-path reports/junit.xml --coverage=reports/coverage/",
-    "lint": "deno lint --fix"
+    "lint": "deno lint --fix",
+    "compile": "deno compile --output $OUTPUT_FILE_NAME --allow-env --allow-net --allow-run --allow-read --allow-write --target $DENO_TARGET script.ts"
   }
 }
