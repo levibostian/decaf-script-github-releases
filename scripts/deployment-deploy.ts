@@ -15,7 +15,9 @@ const compileBinary = async ({ denoTarget, outputFileName }: { denoTarget: strin
   githubReleaseAssets.push(`dist/${outputFileName}#${outputFileName}`)
 }
 
+// --------------------------------------------------------------------------------
 // Compile binaries for different platforms
+// --------------------------------------------------------------------------------
 await compileBinary({
   denoTarget: "x86_64-unknown-linux-gnu",
   outputFileName: "bin-x86_64-Linux",
@@ -36,7 +38,9 @@ await compileBinary({
   outputFileName: "bin-aarch64-Darwin",
 })
 
+// ---------------------------------------------------------------------------------
 // Publish the deno module to jsr
+// ---------------------------------------------------------------------------------
 const argsToDenoPublish = [
   "publish",
   "--set-version",
@@ -51,7 +55,42 @@ if (input.testMode) {
 // https://github.com/dsherret/dax#providing-arguments-to-a-command
 await $`deno ${argsToDenoPublish}`.printCommand()
 
+// ---------------------------------------------------------------------------------
+// Publish the package to npm
+// ---------------------------------------------------------------------------------
+// update the package.json version before we build as build will define the package we push. 
+
+console.log(`Updating node package version to ${input.nextVersionName}...`)
+await $`npm version ${input.nextVersionName} --no-git-tag-version`.cwd("./node").printCommand() 
+// assert the version was updated correctly. grep will exit with code 1 if it doesn't find the string
+await $`cat node/package.json | grep '"version": "${input.nextVersionName}"'`
+
+console.log(`Testing npm authentication...`)
+await $`npm config set //registry.npmjs.org/:_authToken $NPM_TOKEN`
+await $`npm whoami`.printCommand()
+
+// https://github.com/dsherret/dax#providing-arguments-to-a-command
+const argsToPushToNpm = [
+  `publish`,
+  `node/`
+]
+
+if (input.testMode) {
+  argsToPushToNpm.push(`--dry-run`)
+} 
+
+const nameOfNpmPackage = (await $`npm pkg get name`.cwd("./node").text()).trim().replace(/"/g, "")
+const didAlreadyDeployToNpm = (await $`npx is-it-deployed --package-manager npm --package-name ${nameOfNpmPackage} --package-version 0.1.0`.cwd("./node").noThrow()).code === 0
+
+if (didAlreadyDeployToNpm) {
+  console.log(`npm package ${input.nextVersionName} is already deployed. Skipping pushing to npm`)  
+} else {
+  await $`npm ${argsToPushToNpm}`.printCommand()
+}
+
+// ---------------------------------------------------------------------------------
 // GitHub Release with binaries
+// ---------------------------------------------------------------------------------
 const argsToCreateGithubRelease = [
   `release`,
   `create`,
