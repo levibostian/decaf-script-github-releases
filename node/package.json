@@ -6,6 +6,10 @@
   "publishConfig": {
     "access": "public"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/levibostian/decaf-script-github-releases"
+  },
   "main": "script.js",
   "bin": {
     "decaf-script-github-releases": "./script.js"

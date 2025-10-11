@@ -65,10 +65,6 @@ await $`npm version ${input.nextVersionName} --no-git-tag-version`.cwd("./node")
 // assert the version was updated correctly. grep will exit with code 1 if it doesn't find the string
 await $`cat node/package.json | grep '"version": "${input.nextVersionName}"'`
 
-console.log(`Testing npm authentication...`)
-await $`npm config set //registry.npmjs.org/:_authToken $NPM_TOKEN`
-await $`npm whoami`.printCommand()
-
 // https://github.com/dsherret/dax#providing-arguments-to-a-command
 const argsToPushToNpm = [
   `publish`,
