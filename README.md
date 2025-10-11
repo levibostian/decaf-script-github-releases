@@ -1,35 +1,49 @@
-# Decaf Script - GitHub Releases
+# decaf Script - GitHub Releases
 
-A [decaf](https://github.com/levibostian/decaf) script for handling GitHub releases in continuous deployment workflows.
+A script specifically designed for the [decaf](https://github.com/levibostian/decaf) deployment automation tool. This script helps you work with GitHub Releases in your continuous deployment workflows.
+
+**Important**: This is exclusively for use with decaf. You must use decaf to utilize this script - it's not a standalone tool for general use.
 
 ## What does this script do?
+
+If you use GitHub's Releases feature to store and track the versions that you deploy, this script is for you. When you run decaf and need to specify where to determine successful releases, this script provides that functionality.
 
 This script provides functionality to:
 
 1. **Get the latest release** - Finds the most recent GitHub Release that matches a git tag on the current branch
 2. **Validate release state** - Ensures that git tags have corresponding GitHub Releases
-3. **Export functions** - Can be used as a library or standalone script
 
-## Usage
+## Getting Started
 
-### As a decaf script
+**No installation required!** We just need to tell decaf how to run this script. 
 
-This script is designed to be used with the [decaf](https://github.com/levibostian/decaf) deployment automation tool. When you install decaf and configure it to use this script, it will:
+Doesn't matter how you run decaf (GitHub Actions or CLI), for the *`get_latest_release_current_branch`* argument, you just need to specify how to run it.
 
-1. Check for the latest release on your current branch
-2. Find the corresponding git commit
-3. Provide this information to decaf for further deployment steps
-
-### As a library
-
-You can also import and use the functions directly:
-
-```typescript
-import { getLatestReleaseFromGitHubReleases } from "@levibostian/decaf-script-github-releases";
-
-const latestRelease = await getLatestReleaseFromGitHubReleases();
-if (latestRelease) {
-  console.log(`Latest release: ${latestRelease.versionName}`);
-  console.log(`Commit SHA: ${latestRelease.commitSha}`);
-}
+```yaml
+- uses: levibostian/decaf
+  with:
+    get_latest_release_current_branch: npx @levibostian/decaf-script-github-releases
+    # Other decaf arguments...
 ```
+
+The above example uses `npx` and is arguably the easiest way to run the script. But, you have a few other options too: 
+
+1. Run with Deno (requires Deno installed)
+
+```yaml
+get_latest_release_current_branch: deno run --allow-all --quiet jsr:@levibostian/decaf-script-github-releases
+```
+
+2. Run as a compiled binary
+
+Great option that doesn't depend on node or deno. This just installs a binary from GitHub and runs it for your operating system.
+
+```yaml
+# Reminder: replace "0.1.0" with the latest version of the script
+get_latest_release_current_branch: curl -fsSL https://github.com/levibostian/decaf-script-github-releases/blob/HEAD/install?raw=true | bash -s "0.1.0" && ./decaf-script-github-releases
+
+# Or, always run the latest version (less stable, but always up-to-date)
+get_latest_release_current_branch: curl -fsSL https://github.com/levibostian/decaf-script-github-releases/blob/HEAD/install?raw=true | bash && ./decaf-script-github-releases
+```
+
+That's it! decaf will handle the execution and use the results in your deployment workflow.
