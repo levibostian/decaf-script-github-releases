@@ -38,6 +38,13 @@ await compileBinary({
   outputFileName: "bin-aarch64-Darwin",
 })
 
+// In order for the github release deployment script to be able to create a release with these assets, we need to update the input object to include them.
+const outputFileForDeployment = JSON.parse(new TextDecoder("utf-8").decode(Deno.readFileSync(Deno.env.get("DATA_FILE_PATH")!)));
+outputFileForDeployment["@levibostian/decaf-script-github-releases"]["githubReleaseAssets"] = githubReleaseAssets
+
+// Write the updated input back to the file so that the deployment script can read it.
+Deno.writeFileSync(Deno.env.get("DATA_FILE_PATH")!, new TextEncoder().encode(JSON.stringify(outputFileForDeployment)))
+
 // ---------------------------------------------------------------------------------
 // Publish the deno module to jsr
 // ---------------------------------------------------------------------------------
@@ -82,25 +89,4 @@ if (didAlreadyDeployToNpm) {
   console.log(`npm package ${input.nextVersionName} is already deployed. Skipping pushing to npm`)  
 } else {
   await $`npm ${argsToPushToNpm}`.printCommand()
-}
-
-// ---------------------------------------------------------------------------------
-// GitHub Release with binaries
-// ---------------------------------------------------------------------------------
-const argsToCreateGithubRelease = [
-  `release`,
-  `create`,
-  input.nextVersionName,
-  `--generate-notes`,
-  `--latest`,
-  `--target`,
-  'main',
-  ...githubReleaseAssets,
-]
-
-if (input.testMode) {
-  console.log("Running in test mode, skipping creating GitHub release.")
-  console.log(`Command to create GitHub release: gh ${argsToCreateGithubRelease.join(" ")}`)
-} else {
-  await $`gh ${argsToCreateGithubRelease}`.printCommand()
 }

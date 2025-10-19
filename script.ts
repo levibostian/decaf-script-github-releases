@@ -1,7 +1,8 @@
 import {
   getLatestReleaseStepInput,
   type GetLatestReleaseStepOutput,
-  setLatestReleaseStepOutput
+  setLatestReleaseStepOutput,
+  getDeployStepInput
 } from "@levibostian/decaf-sdk";
 import $ from "@david/dax";
 
@@ -51,9 +52,104 @@ export const getLatestReleaseFromGitHubReleases = async (): Promise<GetLatestRel
   }
 }
 
+export const createGitHubRelease = async (customArgs: string[] = []): Promise<void> => {
+  const input = getDeployStepInput();
+  const inputAsUnknown = input as unknown as { "@levibostian/decaf-script-github-releases": { githubReleaseAssets?: string[] } };
+  
+  // Get assets from input if they exist
+  const githubReleaseAssets = inputAsUnknown["@levibostian/decaf-script-github-releases"].githubReleaseAssets || [];
+  
+  // Get current branch from input
+  const currentBranch = input.gitCurrentBranch;
+  
+  let argsToCreateGithubRelease: string[];
+  
+  if (customArgs.length > 0) {
+    // User provided custom arguments, use them directly
+    argsToCreateGithubRelease = [
+      'release',
+      'create',
+      input.nextVersionName,
+      ...customArgs,
+      ...githubReleaseAssets,
+    ];
+  } else {
+    // Use default arguments
+    argsToCreateGithubRelease = [
+      'release',
+      'create', 
+      input.nextVersionName,
+      '--generate-notes',
+      '--latest',
+      '--target',
+      currentBranch,
+      ...githubReleaseAssets,
+    ];
+  }
+
+  if (input.testMode) {
+    console.log("Running in test mode, skipping creating GitHub release.");
+    console.log(`Command to create GitHub release: gh ${argsToCreateGithubRelease.join(" ")}`);
+  } else {
+    await $`gh ${argsToCreateGithubRelease}`.printCommand();
+  }
+}
+
+function showHelp() {
+  console.log(`
+Usage: 
+  script.ts get                           # Get the latest release (default behavior)
+  script.ts set [args...]                 # Set/create a GitHub release
+  script.ts get-latest-release            # Alias for 'get'
+  script.ts set-latest-release [args...]  # Alias for 'set'
+
+Commands:
+  get, get-latest-release    Get the latest GitHub release that matches a git tag on the current branch
+  set, set-latest-release    Create a new GitHub release
+
+Examples:
+  # Get latest release
+  script.ts get
+  script.ts get-latest-release
+
+  # Create release with default settings
+  script.ts set
+  script.ts set-latest-release
+
+  # Create release with custom arguments
+  script.ts set --generate-notes --latest --target main
+  script.ts set-latest-release --draft --notes "Custom release notes"
+`);
+}
+
 if (import.meta.main) {
-  const latestRelease = await getLatestReleaseFromGitHubReleases();
-  if (latestRelease) {
-    setLatestReleaseStepOutput(latestRelease);
+  // Check for help flag
+  if (Deno.args.includes("--help") || Deno.args.includes("-h")) {
+    showHelp();
+    Deno.exit(0);
+  }
+
+  const command = Deno.args.length > 0 ? Deno.args[0] : "get";
+  const commandArgs = Deno.args.slice(1);
+
+  switch (command) {
+    case "get":
+    case "get-latest-release": {
+      const latestRelease = await getLatestReleaseFromGitHubReleases();
+      if (latestRelease) {
+        setLatestReleaseStepOutput(latestRelease);
+      }
+      break;
+    }
+    case "set":
+    case "set-latest-release": {
+      await createGitHubRelease(commandArgs);
+      break;
+    }
+    default: {
+      console.error(`Unknown command: ${command}`);
+      showHelp();
+      Deno.exit(1);
+    }
   }
 }
