@@ -13,28 +13,7 @@ This script provides functionality to:
 1. **Get the latest release** - Finds the most recent GitHub Release that matches a git tag on the current branch
 2. **Set/create a release** - Creates a new GitHub Release with configurable options
 
-## Commands
-
-### Get Latest Release (Default)
-```bash
-# These are all equivalent
-script.ts
-script.ts get
-script.ts get-latest-release
-```
-
-### Set/Create Release
-```bash
-# Create release with default settings
-script.ts set
-script.ts set-latest-release
-
-# Create release with custom arguments
-script.ts set --generate-notes --latest --target main
-script.ts set --draft --notes "Custom release notes"
-```
-
-## Getting Started
+# Getting Started
 
 **No installation required!** We just need to tell decaf how to run this script (via `npx`, `deno`, or a compiled binary).
 
@@ -83,45 +62,58 @@ deploy: curl -fsSL https://github.com/levibostian/decaf-script-github-releases/b
 get_latest_release_current_branch: curl -fsSL https://github.com/levibostian/decaf-script-github-releases/blob/HEAD/install?raw=true | bash && ./decaf-script-github-releases get
 ```
 
-### Using Aliases
+# Commands
 
-For convenience, you can also use these aliases:
+### Get Latest Release
 
-```bash
-# Instead of 'get', you can use:
-get-latest-release
+In your *get latest release* script for decaf, use the `get` (or `get-latest-release`) command to fetch the latest GitHub Release for the current branch. 
 
-# Instead of 'set', you can use:
-set-latest-release
+If your GitHub repository...
+- ...has a newer git tag then the latest release, this script will return the release, not the tag. 
+- ...has no releases, it will return nothing, indicating that there is no latest release. 
+- ...has newer GitHub Releases then the current branch's latest git tag, it will return the older GitHub Release that matches the latest git tag on the current branch.
+
+Example usage:
+
+```bash 
+npx @levibostian/decaf-script-github-releases get
 ```
 
-### GitHub Release Options
+### Set/Create Release
 
-When creating new releases, this script just runs the GitHub CLI under the hood. The script will use a set of default options to create the release, but you can customize it by passing any additional arguments that the GitHub CLI supports.
+In your *deploy* script for decaf, use the `set` (or `set-latest-release`) command to create a new GitHub Release for the current branch.
 
-Example: 
+When you run this command, it will:
+- Create a new GitHub Release using the new version determined by the decaf get next release version script 
+- Upload any assets that you created if you called the `set-assets` command beforehand
+
+Example usage:
 
 ```bash
-# All arguments that you add after 'set' will be passed to the GitHub CLI
+# Use the default settings to create the release
+npx @levibostian/decaf-script-github-releases set
+
+# Or, with custom GitHub CLI arguments
 npx @levibostian/decaf-script-github-releases set --draft --target {{gitCurrentBranch}}
 ```
 
-### GitHub Release Assets
+### Set GitHub Release Assets
 
-If you want to upload assets with the GitHub Release, you can provide paths to those assets as output of your own deployment script.
+In your *deploy* script for decaf, use the `set-assets` (or `set-github-release-assets`) command to specify files that should be uploaded when creating a GitHub Release (when you call `set` command).
 
-It's a little hacky at the moment because decaf doesn't have this feature built-in at the moment, but you can append custom JSON data to provide to this script like this: 
+This command allows you to:
+- Specify multiple files to upload as release assets
+- Set custom display names for each asset
 
-```typescript
-// In order for the github release deployment script to be able to create a release with these assets, we need to update the input object to include them.
-const outputFileForDeployment = JSON.parse(new TextDecoder("utf-8").decode(Deno.readFileSync(Deno.env.get("DATA_FILE_PATH")!)));
-outputFileForDeployment["@levibostian/decaf-script-github-releases"]["githubReleaseAssets"] = githubReleaseAssets
+Example usage:
 
-// Write the updated input back to the file so that the deployment script can read it.
-Deno.writeFileSync(Deno.env.get("DATA_FILE_PATH")!, new TextEncoder().encode(JSON.stringify(outputFileForDeployment)))
+```bash
+# After your deployment script runs, set the assets to upload. 
+# Each asset follows the format: `"path/to/file#Display Name"`
+npx @levibostian/decaf-script-github-releases set-assets "dist/binary-linux#Linux Binary" "dist/binary-mac#Mac Binary"
+
+# Then create the release (it will automatically include the assets)
+npx @levibostian/decaf-script-github-releases set
 ```
 
-This is Deno typescript code, but the concept is the same in any language. Parse the JSON file located at file path specified in the `DATA_FILE_PATH` environment variable, add a key with the name of this package (`@levibostian/decaf-script-github-releases`), and then add a `githubReleaseAssets` array to that object. The value of that array should be strings with the format: `"<path-to-asset>#<name-of-asset>"`. Lastly, write the updated JSON back to the same file path.
-
-See the file `script/deployment-deploy.ts` in this repository for a complete example of how to do this.
 
