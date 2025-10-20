@@ -6,6 +6,15 @@ import {
 } from "@levibostian/decaf-sdk";
 import $ from "@david/dax";
 
+interface ScriptDataSavedToFile {
+  githubReleaseAssets: string[];
+}
+const getFileToSaveScriptDataTo = (): string => {
+  const tempDir = Deno.env.get("TMPDIR") || Deno.env.get("TMP") || "/tmp";
+    const assetsFilePath = `${tempDir}/decaf-script-github-releases-assets.json`;
+  return assetsFilePath;
+}
+
 export const getLatestReleaseFromGitHubReleases = async (): Promise<GetLatestReleaseStepOutput | null> => {
   const input = getLatestReleaseStepInput();
 
@@ -54,10 +63,16 @@ export const getLatestReleaseFromGitHubReleases = async (): Promise<GetLatestRel
 
 export const createGitHubRelease = async (customArgs: string[] = []): Promise<void> => {
   const input = getDeployStepInput();
-  const inputAsUnknown = input as unknown as { "@levibostian/decaf-script-github-releases": { githubReleaseAssets?: string[] } };
   
-  // Get assets from input if they exist
-  const githubReleaseAssets = inputAsUnknown["@levibostian/decaf-script-github-releases"].githubReleaseAssets || [];
+  // Get assets from temp file created by set-assets command
+  let githubReleaseAssets: string[] = [];
+  try {
+    const assetsFilePath = getFileToSaveScriptDataTo();
+    const assetsData: ScriptDataSavedToFile = JSON.parse(await Deno.readTextFile(assetsFilePath));
+    githubReleaseAssets = assetsData.githubReleaseAssets || [];
+  } catch {
+    // No temp file or error reading it, continue with empty assets
+  }
   
   // Get current branch from input
   const currentBranch = input.gitCurrentBranch;
@@ -95,17 +110,54 @@ export const createGitHubRelease = async (customArgs: string[] = []): Promise<vo
   }
 }
 
+export const setGitHubReleaseAssets = async (assets: string[]): Promise<void> => {  
+  // Verify all asset paths exist
+  for (const asset of assets) {
+    const assetPath = asset.split("#")[0];
+    try {
+      const stat = await Deno.stat(assetPath);
+      if (!stat.isFile) {
+        console.error(`Given asset, ${assetPath}, is not a file. Cannot proceed.`);
+        Deno.exit(1);
+      }
+    } catch {
+      console.error(`Given asset, ${assetPath}, file does not exist. Cannot proceed.`);
+      Deno.exit(1);
+    }
+  }
+
+  // Get the temporary directory
+  const assetsFilePath = getFileToSaveScriptDataTo();
+  
+  // Create the assets data
+  const assetsData: ScriptDataSavedToFile = {
+    githubReleaseAssets: assets
+  };
+  
+  // Write to temp file
+  try {
+    await Deno.writeTextFile(assetsFilePath, JSON.stringify(assetsData, null, 2));
+    console.log(`GitHub Release assets: ${assets.join(", ")} saved to be referenced later when creating a release.`);
+  } catch (error) {
+    console.error(`Failed to write assets file: ${error instanceof Error ? error.message : String(error)}`);
+    Deno.exit(1);
+  }
+}
+
 function showHelp() {
   console.log(`
 Usage: 
   script.ts get                           # Get the latest release (default behavior)
   script.ts set [args...]                 # Set/create a GitHub release
+  script.ts set-assets <asset1> [asset2...]  # Set GitHub release assets
   script.ts get-latest-release            # Alias for 'get'
   script.ts set-latest-release [args...]  # Alias for 'set'
+  script.ts set-github-release-assets <asset1> [asset2...]  # Alias for 'set-assets'
 
 Commands:
-  get, get-latest-release    Get the latest GitHub release that matches a git tag on the current branch
-  set, set-latest-release    Create a new GitHub release
+  get, get-latest-release                Get the latest GitHub release that matches a git tag on the current branch
+  set, set-latest-release                Create a new GitHub release
+  set-assets, set-github-release-assets  Set GitHub release assets for future release creation
 
 Examples:
   # Get latest release
@@ -119,6 +171,10 @@ Examples:
   # Create release with custom arguments
   script.ts set --generate-notes --latest --target main
   script.ts set-latest-release --draft --notes "Custom release notes"
+
+  # Set assets for future release
+  script.ts set-assets "dist/binary-linux#Linux Binary" "dist/binary-mac#Mac Binary"
+  script.ts set-github-release-assets "docs/manual.pdf#User Manual"
 `);
 }
 
@@ -144,6 +200,18 @@ if (import.meta.main) {
     case "set":
     case "set-latest-release": {
       await createGitHubRelease(commandArgs);
+      break;
+    }
+    case "set-assets":
+    case "set-github-release-assets": {
+      if (commandArgs.length === 0) {
+        console.error("Error: set-assets command requires at least one asset argument");
+        console.error("Usage: script.ts set-assets <asset1> [asset2...]");
+        console.error("Asset format: path#name (e.g., 'dist/binary#Binary File')");
+        
+        Deno.exit(1);
+      }
+      await setGitHubReleaseAssets(commandArgs);
       break;
     }
     default: {
