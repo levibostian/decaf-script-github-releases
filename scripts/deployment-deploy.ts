@@ -38,12 +38,14 @@ await compileBinary({
   outputFileName: "bin-aarch64-Darwin",
 })
 
-// In order for the github release deployment script to be able to create a release with these assets, we need to update the input object to include them.
-const outputFileForDeployment = JSON.parse(new TextDecoder("utf-8").decode(Deno.readFileSync(Deno.env.get("DATA_FILE_PATH")!)));
-outputFileForDeployment["@levibostian/decaf-script-github-releases"]["githubReleaseAssets"] = githubReleaseAssets
-
-// Write the updated input back to the file so that the deployment script can read it.
-Deno.writeFileSync(Deno.env.get("DATA_FILE_PATH")!, new TextEncoder().encode(JSON.stringify(outputFileForDeployment)))
+await $`deno ${[
+  `run`,
+  `--quiet`,
+  `--allow-all`,
+  `script.ts`,
+  `set-github-release-assets`,
+  ...githubReleaseAssets
+]}`.printCommand()
 
 // ---------------------------------------------------------------------------------
 // Publish the deno module to jsr
@@ -90,3 +92,20 @@ if (didAlreadyDeployToNpm) {
 } else {
   await $`npm ${argsToPushToNpm}`.printCommand()
 }
+
+// ---------------------------------------------------------------------------------
+// Create the GitHub Release
+// ---------------------------------------------------------------------------------
+
+await $`deno ${[
+  `run`,
+  `--quiet`,
+  `--allow-all`,
+  `script.ts`,
+  `set-latest-release`,
+  `--generate-notes`,
+  `--latest`,
+  `--target`,
+  `${input.gitCurrentBranch}`
+]}`.printCommand()
+
