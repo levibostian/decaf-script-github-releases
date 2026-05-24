@@ -16,8 +16,7 @@
   "imports": {
     "@levibostian/decaf-sdk": "jsr:@levibostian/decaf-sdk@0.2.1",
     "@david/dax": "jsr:@david/dax@0.43.2",
-    "@std/assert": "jsr:@std/assert@1.0.14",
-    "@std/semver": "jsr:@std/semver@1"
+    "@std/assert": "jsr:@std/assert@1.0.14"
   },
   "tasks": {
     "test": "deno test --allow-all --junit-path reports/junit.xml --coverage=reports/coverage/",
