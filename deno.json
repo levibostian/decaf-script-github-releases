@@ -1,18 +1,4 @@
 {
-  "name": "@levibostian/decaf-script-github-releases",
-  "license": "MIT",
-  "exports": {
-    ".": "./script.ts"
-  },
-  "publish": {
-    "include": [
-      "LICENSE",
-      "README.md",
-      "script.ts",
-      "deno.json",
-      "deno.lock"
-    ]
-  },
   "imports": {
     "@levibostian/decaf-sdk": "jsr:@levibostian/decaf-sdk@0.2.1",
     "@david/dax": "jsr:@david/dax@0.43.2",
