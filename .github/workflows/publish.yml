@@ -34,7 +34,7 @@ jobs:
             deno compile --output decaf-script-github-releases-arm64-macos --target aarch64-apple-darwin script.ts
             cp install.template install.sh
             chmod +x install.sh
-            sed -i "s/PUT_VERSION_HERE/${{ steps.decaf.outputs.next_version_name }}/" install.sh
+            sed -i "s/PUT_VERSION_HERE/{{nextVersionName}}/" install.sh
             cat install.sh | grep VERSION
             deno task run set-github-release-assets \
               decaf-script-github-releases-x64-linux \
